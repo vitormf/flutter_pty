@@ -60,7 +60,6 @@ static void *read_loop(void *arg)
 
         if (n < 0)
         {
-            // TODO: handle error
             break;
         }
 
@@ -77,6 +76,11 @@ static void *read_loop(void *arg)
 
         Dart_PostCObject_DL(options->port, &result);
     }
+
+    // Close the master PTY fd and release options so the fd is not leaked
+    // when the child process exits and Dart disposes of the PtyHandle.
+    close(options->fd);
+    free(options);
 
     return NULL;
 }
@@ -96,6 +100,7 @@ static void start_read_thread(int fd, Dart_Port port, pthread_mutex_t *mutex, bo
     pthread_t _thread;
 
     pthread_create(&_thread, NULL, &read_loop, options);
+    pthread_detach(_thread);
 }
 
 typedef struct WaitExitOptions
@@ -123,6 +128,8 @@ static void *wait_exit_thread(void *arg)
         Dart_PostInteger_DL(options->port, -WTERMSIG(status));
     }
 
+    free(options);
+
     return NULL;
 }
 
@@ -137,6 +144,7 @@ static void start_wait_exit_thread(int pid, Dart_Port port)
     pthread_t _thread;
 
     pthread_create(&_thread, NULL, &wait_exit_thread, options);
+    pthread_detach(_thread);
 }
 
 static void set_environment(char **environment)
