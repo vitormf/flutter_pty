@@ -4,6 +4,7 @@
 
 #include <fcntl.h>
 #include <pthread.h>
+#include <signal.h>
 #include <unistd.h>
 #include <termios.h>
 #include <sys/ioctl.h>
@@ -60,9 +61,18 @@ pid_t pty_forkpty(
 
     if (pid == 0)
     {
+        // Reset all signal handlers to defaults. The parent may have installed
+        // handlers (e.g. Crashlytics) that call async-signal-unsafe functions.
+        // Running them in the child side of fork, before exec, causes a crash
+        // because macOS file system APIs abort when called post-fork pre-exec.
+        for (int sig = 1; sig < NSIG; sig++)
+        {
+            signal(sig, SIG_DFL);
+        }
+
         setsid();
         if (ioctl(pts, TIOCSCTTY, (char *)NULL) == -1)
-            exit(-1);
+            _exit(-1);
 
         dup2(pts, STDIN_FILENO);
         dup2(pts, STDOUT_FILENO);
