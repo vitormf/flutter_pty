@@ -71,7 +71,14 @@ pid_t pty_forkpty(
         }
 
         setsid();
-        if (ioctl(pts, TIOCSCTTY, (char *)NULL) == -1)
+
+        // Close the parent-inherited slave PTY (opened with O_NOCTTY) and
+        // re-open without O_NOCTTY. On macOS/BSD, a session leader that opens
+        // a tty without O_NOCTTY automatically acquires it as the controlling
+        // terminal. This avoids TIOCSCTTY, which the macOS App Sandbox denies.
+        close(pts);
+        pts = open(devname, O_RDWR);
+        if (pts < 0)
             _exit(-1);
 
         dup2(pts, STDIN_FILENO);
