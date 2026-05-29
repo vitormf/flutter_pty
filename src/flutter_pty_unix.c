@@ -188,12 +188,11 @@ FFI_PLUGIN_EXPORT PtyHandle *pty_create(PtyOptions *options)
             chdir(options->working_directory);
         }
 
-        int ok = execvp(options->executable, options->arguments);
+        execvp(options->executable, options->arguments);
 
-        if (ok < 0)
-        {
-            perror("execvp");
-        }
+        // execvp only returns on failure. Exit so the child does not fall
+        // through into the parent's Dart/Flutter code path and corrupt state.
+        _exit(1);
     }
 
     PtyHandle *handle = (PtyHandle *)malloc(sizeof(PtyHandle));
