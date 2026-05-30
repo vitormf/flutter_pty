@@ -181,18 +181,6 @@ FFI_PLUGIN_EXPORT PtyHandle *pty_create(PtyOptions *options)
 
     if (pid == 0)
     {
-        // macOS 26+: _libsecinit_appsandbox terminates processes inside an App
-        // Sandbox that inherit APP_SANDBOX_CONTAINER_ID without having the
-        // com.apple.security.inherit entitlement set up via posix_spawn. Strip
-        // these vars so the exec'd process and its descendants (e.g. tmux
-        // window processes) do not trigger the new macOS 26 check. The kernel
-        // sandbox policy is still enforced regardless of these env vars.
-#ifdef __APPLE__
-        unsetenv("APP_SANDBOX_CONTAINER_ID");
-        unsetenv("CFFIXED_USER_HOME");
-        unsetenv("__CFBundleIdentifier");
-#endif
-
         set_environment(options->environment);
 
         if (options->working_directory != NULL && strlen(options->working_directory) > 0)
