@@ -7,7 +7,7 @@ let package = Package(
         .macOS("10.14")
     ],
     products: [
-        .library(name: "flutter-pty", targets: ["flutter_pty"])
+        .library(name: "flutter-pty", type: .static, targets: ["flutter_pty"])
     ],
     targets: [
         .target(
