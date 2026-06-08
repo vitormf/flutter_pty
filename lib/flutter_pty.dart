@@ -11,7 +11,11 @@ const _libName = 'flutter_pty';
 
 final DynamicLibrary _dylib = () {
   if (Platform.isMacOS || Platform.isIOS) {
-    return DynamicLibrary.open('$_libName.framework/$_libName');
+    // DynamicLibrary.process() resolves symbols from the already-loaded process
+    // image, which works for both SPM static linking and CocoaPods dynamic
+    // embedding (in the latter case the framework is already mapped into the
+    // process by the time any Dart code runs).
+    return DynamicLibrary.process();
   }
   if (Platform.isAndroid || Platform.isLinux) {
     return DynamicLibrary.open('lib$_libName.so');
